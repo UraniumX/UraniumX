@@ -155,7 +155,7 @@ class FrameworkInfo(object):
 class ApplicationBundleInfo(object):
     def __init__(self, path):
         self.path = path
-        appName = "Bitcoin-Qt"
+        appName = "UraniumX-Qt"
         self.binaryPath = os.path.join(path, "Contents", "MacOS", appName)
         if not os.path.exists(self.binaryPath):
             raise RuntimeError("Could not find bundle binary for " + path)
@@ -603,7 +603,7 @@ else:
 
 # ------------------------------------------------
 
-target = os.path.join("dist", "Bitcoin-Qt.app")
+target = os.path.join("dist", "UraniumX-Qt.app")
 
 if verbose >= 2:
     print("+ Copying source bundle +")
@@ -703,12 +703,10 @@ for p in config.add_resources:
 
 # ------------------------------------------------
 
-if config.sign and 'CODESIGNARGS' not in os.environ:
-    print("You must set the CODESIGNARGS environment variable. Skipping signing.")
-elif config.sign:
+if 'CODESIGN_IDENTITY' in os.environ:
     if verbose >= 1:
         print("Code-signing app bundle %s"%(target,))
-    subprocess.check_call("codesign --force %s %s"%(os.environ['CODESIGNARGS'], target), shell=True)
+    subprocess.check_call(['bash', 'contrib/macdeploy/sign-osx.sh'], shell=False)
 
 # ------------------------------------------------
 

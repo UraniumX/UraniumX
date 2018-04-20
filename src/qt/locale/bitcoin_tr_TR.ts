@@ -344,7 +344,7 @@
         <translation>RPC sunucu ayarları</translation>
     </message>
     <message>
-        <source>Transaction too large</source>
+        <source>Transaction to large</source>
         <translation>İşlem çok büyük</translation>
     </message>
     <message>

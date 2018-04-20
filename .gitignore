@@ -1,13 +1,29 @@
 *.tar.gz
 
+.vagrant
+.vscode
+
+/background.tiff*
+/share/certs/cert.pem
+/share/certs/key.pem
+/share/certs/authenticode.*
+/share/certs/id_codesign*
 *.exe
-src/bitcoin
-src/bitcoind
-src/bitcoin-cli
-src/bitcoin-tx
-src/test/test_bitcoin
-src/test/test_bitcoin_fuzzy
-src/qt/test/test_bitcoin-qt
+src/uraniumxd
+src/uraniumx-cli
+src/uraniumx-tx
+src/bench/bench_uraniumx
+src/test/test_uraniumx
+src/test/test_uraniumx_fuzzy
+src/qt/test/test_uraniumx-qt
+src/qt/uraniumx-qt
+/UraniumX-Qt.app
+/dist/uraniumx*
+/dist/UraniumX*
+/UraniumX-*
+*.exe
+*uraniumx*.key
+*uraniumx*.pem
 
 # autoreconf
 Makefile.in
@@ -75,7 +91,10 @@ src/qt/test/moc*.cpp
 *.qm
 Makefile
 bitcoin-qt
-Bitcoin-Qt.app
+uraniumx-qt
+UraniumX-Qt.app
+/dist/uraniumx-win32
+/dist/uraniumx-x64
 
 # Unit-tests
 Makefile.test
@@ -108,4 +127,7 @@ test/cache/*
 /doc/doxygen/
 
 libbitcoinconsensus.pc
+liburaniumxconsensus.pc
 contrib/devtools/split-debug.sh
+
+/share/keys/

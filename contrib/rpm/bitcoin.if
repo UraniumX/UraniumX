@@ -24,7 +24,7 @@ interface(`bitcoin_domtrans',`
 
 ########################################
 ## <summary>
-##	Execute bitcoin server in the bitcoin domain.
+##	Execute UraniumX server in the bitcoin domain.
 ## </summary>
 ## <param name="domain">
 ##	<summary>

@@ -3,9 +3,14 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#if ! defined __MINGW32__
+ #include <sys/resource.h>
+#endif
+
 #include "miner.h"
 
 #include "amount.h"
+#include "base58.h"
 #include "chain.h"
 #include "chainparams.h"
 #include "coins.h"
@@ -26,14 +31,16 @@
 #include "util.h"
 #include "utilmoneystr.h"
 #include "validationinterface.h"
-
+#include "wallet/wallet.h"
+#include "crypto/argon2.h"
+#include <boost/thread.hpp>
 #include <algorithm>
 #include <queue>
 #include <utility>
 
 //////////////////////////////////////////////////////////////////////////////
 //
-// BitcoinMiner
+// UraniumX Miner
 //
 
 //
@@ -44,6 +51,17 @@
 
 uint64_t nLastBlockTx = 0;
 uint64_t nLastBlockWeight = 0;
+
+class ScoreCompare
+{
+public:
+    ScoreCompare() {}
+
+    bool operator()(const CTxMemPool::txiter a, const CTxMemPool::txiter b)
+    {
+        return CompareTxMemPoolEntryByScore()(*b,*a); // Convert to less than
+    }
+};
 
 int64_t UpdateTime(CBlockHeader* pblock, const Consensus::Params& consensusParams, const CBlockIndex* pindexPrev)
 {
@@ -170,7 +188,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     pblocktemplate->vTxFees[0] = -nFees;
 
     LogPrintf("CreateNewBlock(): block weight: %u txs: %u fees: %ld sigops %d\n", GetBlockWeight(*pblock), nBlockTx, nFees, nBlockSigOpsCost);
-
+    
     // Fill in header
     pblock->hashPrevBlock  = pindexPrev->GetBlockHash();
     UpdateTime(pblock, chainparams.GetConsensus(), pindexPrev);
@@ -439,6 +457,12 @@ void BlockAssembler::addPackageTxs(int &nPackagesSelected, int &nDescendantsUpda
     }
 }
 
+CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const CScript& scriptPubKeyIn)
+{
+    BlockAssembler assembler (chainparams);
+    return assembler.CreateNewBlock(scriptPubKeyIn).release();
+}
+
 void IncrementExtraNonce(CBlock* pblock, const CBlockIndex* pindexPrev, unsigned int& nExtraNonce)
 {
     // Update nExtraNonce
@@ -456,4 +480,318 @@ void IncrementExtraNonce(CBlock* pblock, const CBlockIndex* pindexPrev, unsigned
 
     pblock->vtx[0] = MakeTransactionRef(std::move(txCoinbase));
     pblock->hashMerkleRoot = BlockMerkleRoot(*pblock);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+// Internal miner
+//
+
+// tracks basic info about each miner instance
+struct MinerInfo {
+    MinerInfo()
+    { 
+        nHashes = 0;
+        nNonceOffset = 0;
+        fKill = 0;
+    }
+
+    std::atomic<int64_t> nHashes;
+    std::atomic<int> nNonceOffset;
+    std::atomic<int> fKill;
+};
+
+static std::atomic<int> fMinerRunning; // <= 0 if not running
+static std::atomic<int64_t> nMinerStartTime; // millis
+static std::vector<MinerInfo*> vMiners; // one for each thread
+
+#if ! defined (__MINGW32__)
+ #ifndef PRIO_MAX
+  #define PRIO_MAX 20
+ #endif
+ #define THREAD_PRIORITY_LOWEST          PRIO_MAX
+ #define THREAD_PRIORITY_BELOW_NORMAL    2
+ #define THREAD_PRIORITY_NORMAL          0
+ #define THREAD_PRIORITY_ABOVE_NORMAL    (-2)
+#endif
+
+static void SetThreadPriority (int nPriority)
+{
+   #ifdef WIN32
+    SetThreadPriority(GetCurrentThread(), nPriority);
+   #else // WIN32
+    #ifdef PRIO_THREAD
+     setpriority(PRIO_THREAD, 0, nPriority);
+    #else // PRIO_THREAD
+     setpriority(PRIO_PROCESS, 0, nPriority);
+    #endif // PRIO_THREAD
+   #endif // WIN32
+}
+
+// reset miner info. only call when threads are not running
+static void MinerResetStats()
+{
+    fMinerRunning = 0;
+    nMinerStartTime = 0;
+    for (auto* miner : vMiners)
+        delete miner;
+    vMiners.clear();
+}
+
+double EstimateMinerHashesPerSecond()
+{
+    if (fMinerRunning <= 0 || nMinerStartTime <= 0)
+        return 0.0;
+
+    const double nDeltaTime = (double)(GetTimeMillis() - nMinerStartTime);
+    int64_t nMinerTotalHashes = 0;
+    for (const auto* const miner : vMiners)
+        nMinerTotalHashes += miner->nHashes;
+
+    return 1000.0 * ((double)nMinerTotalHashes / nDeltaTime);
+}
+
+//
+// ScanHash scans nonces looking for a hash with at least some zero bits.
+// The nonce is usually preserved between calls, but periodically or if the
+// nonce is 0xffff0000 or above, the block is rebuilt and nNonce starts over at
+// zero.
+//
+bool static ScanHash (MinerInfo* miner, const CBlockHeader *pblock, uint32_t& nNonce, uint256 *phash)
+{
+    assert(miner != nullptr && pblock != nullptr && phash != nullptr);
+    CBlockHeader& block = *const_cast<CBlockHeader*> (pblock);
+    const auto start = GetTimeMillis();
+
+    while (true)
+    {   
+        nNonce++;
+        block.nNonce = nNonce;
+        *phash = block.GetHashArgon2d();
+        miner->nHashes += 1;
+
+        if (((uint16_t*)phash)[15] <= 32)
+            return true;
+
+        // If nothing found after trying for a while, return -1
+        if ((nNonce & 0xfff) == 0 || miner->fKill > 0) {
+            if (miner->fKill > 0)
+                LogPrintf("UraniumX miner kill flag > 0\n");
+            return false;
+        }
+    }
+
+    return false;
+}
+
+static bool ProcessBlockFound(const CBlock* pblock, const CChainParams& chainparams)
+{
+    LogPrintf("%s\n", pblock->ToString());
+    LogPrintf("generated %s\n", FormatMoney(pblock->vtx[0]->vout[0].nValue));
+
+    // Found a solution
+    {
+        LOCK(cs_main);
+        if (pblock->hashPrevBlock != chainActive.Tip()->GetBlockHash()) {
+            LogPrintf ("UraniumX Miner: generated block is stale\n");
+            return false;
+        }
+    }
+
+    // Process this block the same as if we had received it from another node    
+    bool result = true;
+    std::shared_ptr<const CBlock> ptr (new CBlock (*pblock));
+    if (!ProcessNewBlock (chainparams, ptr, true, nullptr)) {
+        LogPrintf ("UraniumX Miner: ProcessNewBlock, block not accepted\n");
+        result =  false;
+    }
+
+    return result;
+}
+
+void static URXMiner(MinerInfo* miner, const CChainParams& chainparams)
+{
+    LogPrintf("UraniumX Miner started\n");
+    SetThreadPriority (THREAD_PRIORITY_LOWEST);
+    RenameThread ("uraniumx-miner");
+
+    unsigned int nExtraNonce = 0;
+
+    std::shared_ptr<CReserveScript> coinbaseScript;
+    const std::string miningAddrStr = gArgs.GetArg ("-coinbaseaddress", "");
+    const CBitcoinAddress address (miningAddrStr);
+    if (address.IsValid())
+    {
+        coinbaseScript = std::make_shared<CReserveScript>();
+        coinbaseScript->reserveScript = GetScriptForDestination(address.Get());
+    }
+
+    try {
+        while (true) {
+            if (chainparams.MiningRequiresPeers()) {
+                // Busy-wait for the network to come online so we don't waste time mining
+                // on an obsolete chain. In regtest mode we expect to fly solo.
+                do {
+                    bool fvNodesEmpty = g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL) <= 0;
+                    if (!fvNodesEmpty && !IsInitialBlockDownload())
+                        break;
+                    MilliSleep(1000);
+                } while (true);
+            }
+
+            if(coinbaseScript != nullptr
+                && gArgs.GetBoolArg("-rotatecoinbase", false)
+                && !address.IsValid())
+            {
+                coinbaseScript.reset();
+            }
+
+            if(vpwallets.size() > 0 && coinbaseScript == nullptr)
+            {
+                LogPrintf("UraniumX Miner: creating new mining address");
+                vpwallets[0]->GetScriptForMining (coinbaseScript);
+            }
+
+            // Throw an error if no script was provided.  This can happen
+            // due to some internal error but also if the keypool is empty.
+            // In the latter case, already the pointer is NULL.
+            if (!coinbaseScript || coinbaseScript->reserveScript.empty())
+                throw std::runtime_error("No coinbase script available (mining requires a wallet)");
+
+            //
+            // Create new block
+            //
+            unsigned int nTransactionsUpdatedLast = mempool.GetTransactionsUpdated();
+            CBlockIndex* pindexPrev = chainActive.Tip();
+            std::auto_ptr<CBlockTemplate> pblocktemplate;
+
+            try
+            {
+                pblocktemplate.reset (CreateNewBlock (chainparams, coinbaseScript->reserveScript));
+            }
+            catch (const std::runtime_error &e)
+            {
+                LogPrintf("UraniumX Miner runtime error: %s\n", e.what());
+                LogPrintf("UraniumX Miner: Keypool ran out, please call keypoolrefill before restarting the mining thread\n");
+                MilliSleep(4*1000);
+                vpwallets[0]->GetScriptForMining (coinbaseScript);
+                continue;
+            }
+
+            CBlock *pblock = &pblocktemplate->block;
+            IncrementExtraNonce(pblock, pindexPrev, nExtraNonce);
+
+            LogPrintf("Running UraniumX Miner with %u transactions in block (%u bytes)\n", pblock->vtx.size(),
+                ::GetSerializeSize(*pblock, SER_NETWORK, PROTOCOL_VERSION));
+
+            //
+            // Search
+            //
+            int64_t nStart = GetTime();
+            arith_uint256 hashTarget = arith_uint256().SetCompact(pblock->nBits);
+            uint256 hash;
+            uint32_t nNonce = static_cast<uint32_t> ((int) miner->nNonceOffset);
+            bool fBlockFound = false;
+
+            while (true) {
+                // Check if something found
+                
+                if (ScanHash (miner, pblock, nNonce, &hash))
+                {
+                    if (UintToArith256(hash) <= hashTarget)
+                    {
+                        // Found a solution
+                        pblock->nNonce = nNonce;
+                        LogPrintf("UraniumX Miner: proof-of-work found  \n  hash: %s  \ntarget: %s\n",
+                                  hash.GetHex(), hashTarget.GetHex());
+                        assert(hash == pblock->GetHashArgon2d());
+
+                        SetThreadPriority (THREAD_PRIORITY_NORMAL);
+                        fBlockFound = ProcessBlockFound(pblock, chainparams);
+                        SetThreadPriority (THREAD_PRIORITY_LOWEST);
+                        if (fBlockFound)
+                            coinbaseScript->KeepScript();
+
+                        // In regression test mode, stop mining after a block is found.
+                        if (chainparams.MineBlocksOnDemand())
+                            throw boost::thread_interrupted();
+                        
+                        break;
+                    }
+                }
+
+                // Check for stop or if block needs to be rebuilt
+                boost::this_thread::interruption_point();
+
+                // Regtest mode doesn't require peers
+                const bool fvNodesEmpty = g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL) <= 0;
+                if (fvNodesEmpty && chainparams.MiningRequiresPeers())
+                    break;
+                if (nNonce >= 0xffff0000)
+                    break;
+                if (mempool.GetTransactionsUpdated() != nTransactionsUpdatedLast && GetTime() - nStart > 60)
+                    break;
+                if (pindexPrev != chainActive.Tip())
+                    break;
+
+                // Update nTime every few seconds
+                if (UpdateTime(pblock, chainparams.GetConsensus(), pindexPrev) < 0)
+                    break; // Recreate the block if the clock has run backwards,
+                           // so that we can use the correct time.
+                if (chainparams.GetConsensus().fPowAllowMinDifficultyBlocks)
+                {
+                    // Changing pblock->nTime can change work required on testnet:
+                    hashTarget.SetCompact(pblock->nBits);
+                }
+            }
+        }
+    }
+    catch (const boost::thread_interrupted&)
+    {
+        LogPrintf("UraniumX Miner terminated\n");
+        throw;
+    }
+    catch (const std::runtime_error &e)
+    {
+        LogPrintf("UraniumX Miner runtime error: %s\n", e.what());
+        return;
+    }
+}
+
+void GenerateURX(bool fGenerate, int nThreads, const CChainParams& chainparams)
+{
+    static boost::thread_group* minerThreads = nullptr;
+    
+    if (nThreads < 0)
+        nThreads = GetNumCores();
+
+    if (minerThreads != nullptr)
+    {
+        minerThreads->interrupt_all();
+        for (auto* const miner : vMiners)
+            miner->fKill = 1;
+        minerThreads->join_all();
+        delete minerThreads;
+        minerThreads = nullptr;
+    }
+
+    MinerResetStats();
+
+    if (nThreads <= 0 || !fGenerate)
+        return;
+
+    const int nNonceMultiplier = 0xffff0000 / nThreads;
+    for (int i = 0; i < nThreads; i++)
+    {
+        auto* const miner = new MinerInfo();
+        miner->nNonceOffset = i * nNonceMultiplier;
+        vMiners.push_back (miner);
+    }
+
+    nMinerStartTime = GetTimeMillis();
+    minerThreads = new boost::thread_group();
+    for (int i = 0; i < nThreads; i++)
+        minerThreads->create_thread(boost::bind(&URXMiner, vMiners[i], boost::cref(chainparams)));
+
+    fMinerRunning = 1;
 }

@@ -42,6 +42,7 @@
 #include "util.h"
 #include "utilmoneystr.h"
 #include "validationinterface.h"
+#include "crypto/argon2.h"
 #ifdef ENABLE_WALLET
 #include "wallet/wallet.h"
 #endif
@@ -187,6 +188,7 @@ void Shutdown()
     StopREST();
     StopRPC();
     StopHTTPServer();
+    GenerateURX (false, -1, Params());
 #ifdef ENABLE_WALLET
     for (CWalletRef pwallet : vpwallets) {
         pwallet->Flush(false);
@@ -278,6 +280,8 @@ void Shutdown()
 #endif
     globalVerifyHandle.reset();
     ECC_Stop();
+    Argon2Deinit();
+    LogPrintf("%s: argon2 unloaded\n", __func__);
     LogPrintf("%s: done\n", __func__);
 }
 
@@ -436,6 +440,10 @@ std::string HelpMessage(HelpMessageMode mode)
     strUsage += HelpMessageOpt("-zmqpubrawblock=<address>", _("Enable publish raw block in <address>"));
     strUsage += HelpMessageOpt("-zmqpubrawtx=<address>", _("Enable publish raw transaction in <address>"));
 #endif
+    
+    strUsage += HelpMessageGroup(_("Miner options:"));
+    strUsage += HelpMessageOpt("-coinbaseaddress=<address>", _("Specify an address to use when mining"));
+    strUsage += HelpMessageOpt("-rotatecoinbase", _("Refresh coinbase address when wallet mining. Has no effect if -coinbaseaddress is set"));
 
     strUsage += HelpMessageGroup(_("Debugging/Testing options:"));
     strUsage += HelpMessageOpt("-uacomment=<cmt>", _("Append comment to the user agent string"));
@@ -527,17 +535,16 @@ std::string HelpMessage(HelpMessageMode mode)
 
 std::string LicenseInfo()
 {
-    const std::string URL_SOURCE_CODE = "<https://github.com/bitcoin/bitcoin>";
-    const std::string URL_WEBSITE = "<https://bitcoincore.org>";
+    const std::string URL_SOURCE_CODE = "<https://github.com/uraniumx/uraniumx>";
+    const std::string URL_WEBSITE = "<https://uranium-x.com>";
 
     return CopyrightHolders(strprintf(_("Copyright (C) %i-%i"), 2009, COPYRIGHT_YEAR) + " ") + "\n" +
+           strprintf(_("Copyright (C) %i The UraniumX developers"), COPYRIGHT_YEAR) + "\n" +
            "\n" +
-           strprintf(_("Please contribute if you find %s useful. "
-                       "Visit %s for further information about the software."),
-               PACKAGE_NAME, URL_WEBSITE) +
+           strprintf(_("Please contribute if you find this software useful. "
+                       "Visit %s for further information about the software."), URL_WEBSITE) +
            "\n" +
-           strprintf(_("The source code is available from %s."),
-               URL_SOURCE_CODE) +
+           strprintf(_("The source code is available from %s."), URL_SOURCE_CODE) +
            "\n" +
            "\n" +
            _("This is experimental software.") + "\n" +
@@ -826,7 +833,7 @@ void InitLogging()
     fLogIPs = gArgs.GetBoolArg("-logips", DEFAULT_LOGIPS);
 
     LogPrintf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
-    LogPrintf("Bitcoin version %s\n", FormatFullVersion());
+    LogPrintf("UraniumX version %s\n", FormatFullVersion());
 }
 
 namespace { // Variables internal to initialization process only

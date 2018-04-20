@@ -172,7 +172,7 @@
         <translation>লেনদেনের পরিমান অনেক ছোট</translation>
     </message>
     <message>
-        <source>Transaction too large</source>
+        <source>Transaction to large</source>
         <translation>লেনদেনর অংক অনেক বড়</translation>
     </message>
     <message>

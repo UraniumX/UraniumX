@@ -16,7 +16,7 @@
 #include "rpc/server.h"
 
 #if defined(HAVE_CONSENSUS_LIB)
-#include "script/bitcoinconsensus.h"
+#include "script/uraniumxconsensus.h"
 #endif
 
 #include <fstream>

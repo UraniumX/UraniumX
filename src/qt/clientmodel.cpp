@@ -8,7 +8,7 @@
 #include "guiconstants.h"
 #include "guiutil.h"
 #include "peertablemodel.h"
-
+#include "rpc/blockchain.h"
 #include "chain.h"
 #include "chainparams.h"
 #include "checkpoints.h"
@@ -73,6 +73,12 @@ int ClientModel::getNumBlocks() const
 {
     LOCK(cs_main);
     return chainActive.Height();
+}
+
+double ClientModel::getDifficulty() const
+{
+    LOCK(cs_main);
+    return GetDifficulty (chainActive.Tip());
 }
 
 int ClientModel::getHeaderTipHeight() const

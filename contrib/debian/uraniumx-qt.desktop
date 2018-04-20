@@ -1,0 +1,13 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=UraniumX
+Comment=Connect to the UraniumX P2P Network
+Comment[de]=Verbinde mit dem UraniumX peer-to-peer Netzwerk
+Comment[fr]=UraniumX, monnaie virtuelle cryptographique pair à pair
+Comment[tr]=UraniumX, eşten eşe kriptografik sanal para birimi
+Exec=uraniumx-qt %u
+Terminal=false
+Type=Application
+Icon=bitcoin128
+MimeType=x-scheme-handler/uraniumx;
+Categories=Office;Finance;

@@ -48,7 +48,7 @@ extern void TxToJSON(const CTransaction& tx, const uint256 hashBlock, UniValue& 
 
 double GetDifficulty(const CBlockIndex* blockindex)
 {
-    if (blockindex == nullptr)
+   if (blockindex == nullptr)
     {
         if (chainActive.Tip() == nullptr)
             return 1.0;

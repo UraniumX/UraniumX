@@ -1,14 +1,14 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: Bitcoin
-Upstream-Contact: Satoshi Nakamoto <satoshin@gmx.com>
- irc://#bitcoin@freenode.net
-Source: https://github.com/bitcoin/bitcoin
+Upstream-Name: UraniumX
+Upstream-Contact: UraniumX <uraniumx@gmail.com>
+Source: https://github.com/uraniumx/uraniumx
 
 Files: *
 Copyright: 2009-2017, Bitcoin Core Developers
+           2018, UraniumX Developers
 License: Expat
-Comment: The Bitcoin Core Developers encompasses the current developers listed on bitcoin.org,
-         as well as the numerous contributors to the project.
+Comment: The Bitcoin Core Developers encompasses the current developers listed on 
+         bitcoin.org, as well as the numerous contributors to the project.
 
 Files: debian/*
 Copyright: 2010-2011, Jonas Smedegaard <dr@jones.dk>

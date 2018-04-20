@@ -308,7 +308,7 @@
         <translation>Транзакция өте кішкентай</translation>
     </message>
     <message>
-        <source>Transaction too large</source>
+        <source>Transaction to large</source>
         <translation>Транзакция өте үлкен</translation>
     </message>
     <message>

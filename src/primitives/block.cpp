@@ -4,22 +4,32 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "primitives/block.h"
-
 #include "hash.h"
 #include "tinyformat.h"
 #include "utilstrencodings.h"
+#include "crypto/argon2.h"
 #include "crypto/common.h"
+#include "streams.h"
+#include "pow.h"
 
 uint256 CBlockHeader::GetHash() const
 {
-    return SerializeHash(*this);
+    return SerializeHash (*this);
+}
+
+uint256 CBlockHeader::GetHashArgon2d() const
+{
+    uint256 hash;
+    Argon2dHash (BEGIN(nVersion), BEGIN(hash), nTime);
+    return hash;
 }
 
 std::string CBlock::ToString() const
 {
     std::stringstream s;
-    s << strprintf("CBlock(hash=%s, ver=0x%08x, hashPrevBlock=%s, hashMerkleRoot=%s, nTime=%u, nBits=%08x, nNonce=%u, vtx=%u)\n",
+    s << strprintf("CBlock(hash=%s, pow=%s, ver=0x%08x, hashPrevBlock=%s, hashMerkleRoot=%s, nTime=%u, nBits=%08x, nNonce=%u, vtx=%u)\n",
         GetHash().ToString(),
+        GetHashArgon2d().ToString(),
         nVersion,
         hashPrevBlock.ToString(),
         hashMerkleRoot.ToString(),

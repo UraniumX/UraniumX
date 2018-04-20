@@ -56,7 +56,7 @@ Patch0:		bitcoin-0.12.0-libressl.patch
 %description
 Bitcoin is a digital cryptographic currency that uses peer-to-peer technology to
 operate with no central authority or banks; managing transactions and the
-issuing of bitcoins is carried out collectively by the network.
+issuing of UraniumXs is carried out collectively by the network.
 
 %if %{_buildqt}
 %package core
@@ -81,7 +81,7 @@ BuildRequires:	%{_bindir}/convert
 %description core
 Bitcoin is a digital cryptographic currency that uses peer-to-peer technology to
 operate with no central authority or banks; managing transactions and the
-issuing of bitcoins is carried out collectively by the network.
+issuing of UraniumXs is carried out collectively by the network.
 
 This package contains the Qt based graphical client and node. If you are looking
 to run a Bitcoin wallet, this is probably the package you want.
@@ -333,9 +333,9 @@ for selinuxvariant in %{selinux_variants}; do
 	%{_sbindir}/semodule -s ${selinuxvariant} -i %{_datadir}/selinux/${selinuxvariant}/bitcoin.pp &> /dev/null || :
 done
 %{_sbindir}/semanage port -a -t bitcoin_port_t -p tcp 8332
-%{_sbindir}/semanage port -a -t bitcoin_port_t -p tcp 8333
+%{_sbindir}/semanage port -a -t bitcoin_port_t -p tcp 7332
 %{_sbindir}/semanage port -a -t bitcoin_port_t -p tcp 18332
-%{_sbindir}/semanage port -a -t bitcoin_port_t -p tcp 18333
+%{_sbindir}/semanage port -a -t bitcoin_port_t -p tcp 17332
 %{_sbindir}/fixfiles -R bitcoin-server restore &> /dev/null || :
 %{_sbindir}/restorecon -R %{_localstatedir}/lib/bitcoin || :
 fi
@@ -352,9 +352,9 @@ fi
 if [ $1 -eq 0 ]; then
 	if [ `%{_sbindir}/sestatus |grep -c "disabled"` -eq 0 ]; then
 	%{_sbindir}/semanage port -d -p tcp 8332
-	%{_sbindir}/semanage port -d -p tcp 8333
+	%{_sbindir}/semanage port -d -p tcp 7332
 	%{_sbindir}/semanage port -d -p tcp 18332
-	%{_sbindir}/semanage port -d -p tcp 18333
+	%{_sbindir}/semanage port -d -p tcp 17332
 	for selinuxvariant in %{selinux_variants}; do
 		%{_sbindir}/semodule -s ${selinuxvariant} -r bitcoin &> /dev/null || :
 	done

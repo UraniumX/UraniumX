@@ -128,7 +128,9 @@ UniValue generateBlocks(std::shared_ptr<CReserveScript> coinbaseScript, int nGen
             LOCK(cs_main);
             IncrementExtraNonce(pblock, chainActive.Tip(), nExtraNonce);
         }
-        while (nMaxTries > 0 && pblock->nNonce < nInnerLoopCount && !CheckProofOfWork(pblock->GetHash(), pblock->nBits, Params().GetConsensus())) {
+        while (nMaxTries > 0 && pblock->nNonce < nInnerLoopCount && 
+                !CheckProofOfWork(pblock->GetHashArgon2d(), pblock->nBits, Params().GetConsensus())) 
+        {
             ++pblock->nNonce;
             --nMaxTries;
         }
@@ -217,12 +219,38 @@ UniValue getmininginfo(const JSONRPCRequest& request)
     obj.push_back(Pair("currentblocktx",   (uint64_t)nLastBlockTx));
     obj.push_back(Pair("difficulty",       (double)GetDifficulty()));
     obj.push_back(Pair("errors",           GetWarnings("statusbar")));
+    obj.push_back(Pair("localhashps",      (double)EstimateMinerHashesPerSecond()));
     obj.push_back(Pair("networkhashps",    getnetworkhashps(request)));
     obj.push_back(Pair("pooledtx",         (uint64_t)mempool.size()));
     obj.push_back(Pair("chain",            Params().NetworkIDString()));
     return obj;
 }
 
+
+UniValue setgenerate(const JSONRPCRequest& request)
+{
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 2)
+        throw std::runtime_error(
+            "setgenerate\n"
+            "\nStarts or stops solo CPU mining."
+            "\nReturns result of getminginginfo."
+            "\nExamples:\n"
+            + HelpExampleCli("setgenerate", "")
+            + HelpExampleRpc("setgenerate", "")
+        );
+
+    LOCK(cs_main);
+    
+    int numCpus = -1;
+    if (!request.params[1].isNull())
+        numCpus = request.params[1].get_int();
+    GenerateURX (request.params[0].get_bool(), numCpus, Params());
+
+    UniValue obj (UniValue::VOBJ);
+    obj.push_back (Pair ("enabled", request.params[0].get_bool()));
+    obj.push_back (Pair ("cpus", numCpus));
+    return obj;
+}
 
 // NOTE: Unlike wallet RPC (which use BTC values), mining RPCs follow GBT (BIP 22) in using satoshi amounts
 UniValue prioritisetransaction(const JSONRPCRequest& request)
@@ -971,6 +999,7 @@ static const CRPCCommand commands[] =
     { "mining",             "getmininginfo",          &getmininginfo,          true,  {} },
     { "mining",             "prioritisetransaction",  &prioritisetransaction,  true,  {"txid","dummy","fee_delta"} },
     { "mining",             "getblocktemplate",       &getblocktemplate,       true,  {"template_request"} },
+    { "mining",             "setgenerate",            &setgenerate,            true,  {"enabled", "cpus"} },
     { "mining",             "submitblock",            &submitblock,            true,  {"hexdata","dummy"} },
 
     { "generating",         "generatetoaddress",      &generatetoaddress,      true,  {"nblocks","address","maxtries"} },

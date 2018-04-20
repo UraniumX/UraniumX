@@ -812,6 +812,8 @@ void RPCConsole::setNumBlocks(int count, const QDateTime& blockDate, double nVer
     if (!headers) {
         ui->numberOfBlocks->setText(QString::number(count));
         ui->lastBlockTime->setText(blockDate.toString());
+        if (clientModel)
+            ui->currentDifficulty->setText(QString::number(clientModel->getDifficulty()));
     }
 }
 

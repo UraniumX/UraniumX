@@ -7,43 +7,85 @@
 
 #include "arith_uint256.h"
 #include "chain.h"
+#include "chainparams.h"
 #include "primitives/block.h"
 #include "uint256.h"
+#include "util.h"
+
+unsigned int static DarkGravityWave(const CBlockIndex* pindexLast, const Consensus::Params& params) {
+    /* current difficulty formula, dash - DarkGravity v3, written by Evan Duffield - evan@dashpay.io */
+    const CBlockIndex *pBlockLastSolved = pindexLast;
+    const CBlockIndex *pBlockReading = pindexLast;
+    int64_t nActualTimespan = 0;
+    int64_t nLastBlockTime  = 0;
+    const int64_t nPastBlocksMin = 10;
+    const int64_t nPastBlocksMax = 12;
+    int64_t nCountBlocks = 0;
+    arith_uint256 bnPastDifficultyAverage;
+    arith_uint256 bnPastDifficultyAveragePrev;
+    
+    const auto bnPowLimit = UintToArith256 (params.powLimit);
+    if (pBlockLastSolved == nullptr || pBlockLastSolved->nHeight < nPastBlocksMin || params.fPowNoRetargeting)
+        return bnPowLimit.GetCompact();
+
+    for (unsigned int i = 1; pBlockReading && pBlockReading->nHeight > 0; i++)
+    {
+        if (nPastBlocksMax > 0 && i > nPastBlocksMax) { break; }
+        nCountBlocks++;
+
+        if (nCountBlocks <= nPastBlocksMin) {
+            if (nCountBlocks == 1) {
+                bnPastDifficultyAverage.SetCompact (pBlockReading->nBits); 
+            } else { 
+                bnPastDifficultyAverage = ((bnPastDifficultyAveragePrev * nCountBlocks) + (arith_uint256().SetCompact(pBlockReading->nBits))) / (nCountBlocks + 1); 
+            }
+            bnPastDifficultyAveragePrev = bnPastDifficultyAverage;
+        }
+
+        if (nLastBlockTime > 0) {
+            int64_t Diff = (nLastBlockTime - pBlockReading->GetBlockTime());
+            nActualTimespan += Diff;
+        }
+
+        nLastBlockTime = pBlockReading->GetBlockTime();
+
+        if (pBlockReading->pprev == nullptr) { 
+            assert(pBlockReading); 
+            break; 
+        }
+
+        pBlockReading = pBlockReading->pprev;
+    }
+
+    arith_uint256 bnNew(bnPastDifficultyAverage);
+
+    int64_t _nTargetTimespan = nCountBlocks * params.nPowTargetSpacing;
+
+    if (nActualTimespan < _nTargetTimespan / 3)
+        nActualTimespan = _nTargetTimespan / 3;
+    if (nActualTimespan > _nTargetTimespan * 3)
+        nActualTimespan = _nTargetTimespan * 3;
+
+    // Retarget
+    bnNew *= nActualTimespan;
+    bnNew /= _nTargetTimespan;
+
+    if (bnNew > bnPowLimit) {
+        bnNew = bnPowLimit;
+    }
+
+    return bnNew.GetCompact();
+}
 
 unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader *pblock, const Consensus::Params& params)
 {
     assert(pindexLast != nullptr);
-    unsigned int nProofOfWorkLimit = UintToArith256(params.powLimit).GetCompact();
 
-    // Only change once per difficulty adjustment interval
-    if ((pindexLast->nHeight+1) % params.DifficultyAdjustmentInterval() != 0)
-    {
-        if (params.fPowAllowMinDifficultyBlocks)
-        {
-            // Special difficulty rule for testnet:
-            // If the new block's timestamp is more than 2* 10 minutes
-            // then allow mining of a min-difficulty block.
-            if (pblock->GetBlockTime() > pindexLast->GetBlockTime() + params.nPowTargetSpacing*2)
-                return nProofOfWorkLimit;
-            else
-            {
-                // Return the last non-special-min-difficulty-rules-block
-                const CBlockIndex* pindex = pindexLast;
-                while (pindex->pprev && pindex->nHeight % params.DifficultyAdjustmentInterval() != 0 && pindex->nBits == nProofOfWorkLimit)
-                    pindex = pindex->pprev;
-                return pindex->nBits;
-            }
-        }
-        return pindexLast->nBits;
-    }
+    const int nDeltaTime = pblock->GetBlockTime() - pindexLast->GetBlockTime();
+    if (params.fPowAllowMinDifficultyBlocks && nDeltaTime > 2 * 60)
+        return UintToArith256(params.powLimit).GetCompact();
 
-    // Go back by what we want to be 14 days worth of blocks
-    int nHeightFirst = pindexLast->nHeight - (params.DifficultyAdjustmentInterval()-1);
-    assert(nHeightFirst >= 0);
-    const CBlockIndex* pindexFirst = pindexLast->GetAncestor(nHeightFirst);
-    assert(pindexFirst);
-
-    return CalculateNextWorkRequired(pindexLast, pindexFirst->GetBlockTime(), params);
+    return DarkGravityWave (pindexLast, params);
 }
 
 unsigned int CalculateNextWorkRequired(const CBlockIndex* pindexLast, int64_t nFirstBlockTime, const Consensus::Params& params)
