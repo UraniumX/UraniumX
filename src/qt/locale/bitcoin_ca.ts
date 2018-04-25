@@ -843,7 +843,7 @@
         <translation>Com és la primera vegada que s'executa el programa, podeu triar on %1 emmagatzemarà les dades.</translation>
     </message>
     <message>
-        <source>%1 will download and store a copy of the Bitcoin block chain. At least %2GB of data will be stored in this directory, and it will grow over time. The wallet will also be stored in this directory.</source>
+        <source>%1 will download and store a copy of the URX block chain. At least %2GB of data will be stored in this directory, and it will grow over time. The wallet will also be stored in this directory.</source>
         <translation>%1 baixarà i emmagatzemarà una còpia de la cadena de blocs de Bitcoin. Com a mínim %2GB de dades s'emmagatzemaran en aquest directori, i augmentarà al llarg del temps. El moneder també s'emmagatzemarà en aquest directori.</translation>
     </message>
     <message>

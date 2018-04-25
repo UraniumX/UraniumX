@@ -648,7 +648,6 @@ void static URXMiner(MinerInfo* miner, const CChainParams& chainparams)
 
             if(vpwallets.size() > 0 && coinbaseScript == nullptr)
             {
-                LogPrintf("UraniumX Miner: creating new mining address");
                 vpwallets[0]->GetScriptForMining (coinbaseScript);
             }
 
