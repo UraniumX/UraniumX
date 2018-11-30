@@ -1043,6 +1043,9 @@ CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
     int halvings = 0;
     CAmount nSubsidy = COIN;
 
+    if (nHeight == SAFETRADE_REPLACEMENT_HEIGHT)
+        return SAFETRADE_REPLACEMENT_AMOUNT * COIN;
+
     if (nHeight < consensusParams.nSubsidyPhase2Height)
     {
         halvings = nHeight / consensusParams.nSubsidyHalvingInterval;
