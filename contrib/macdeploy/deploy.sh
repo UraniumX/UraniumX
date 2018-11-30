@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version="1.0.0"
+version="1.0.1"
 builder=`depends/config.guess`
 site="$PWD/depends/${builder}/share/config.site"
 
@@ -10,7 +10,8 @@ if [ ! -f "$site" ]; then
     exit 1
 fi
 
-CONFIG_SITE="${site}" CXXFLAGS="-fvisibility=hidden" ./configure --prefix="$HOME/.local"
+CONFIG_SITE="${site}" CXXFLAGS="-fvisibility=hidden" ./configure --prefix="$HOME/.local" --disable-tests
+
 make clean && make -j8 && make deploy
 set -e
 pkg=dist/uraniumx-${version}-osx

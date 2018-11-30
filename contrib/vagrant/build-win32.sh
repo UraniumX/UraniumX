@@ -4,7 +4,7 @@ prefix="/"
 destdir="/bitcoin/dist/uraniumx-win32"
 
 CONFIG_SITE="$PWD/depends/i686-w64-mingw32/share/config.site" \
-    ./configure --prefix="${prefix}"
+    ./configure --prefix="${prefix}" --disable-tests
 make -j4
 
 i686-w64-mingw32-strip "src/uraniumxd.exe"

@@ -1,11 +1,11 @@
 #!/bin/bash
 
 prefix="/usr/local"
-version="1.0.0"
+version="1.0.1"
 destdir="/bitcoin/dist/uraniumx-${version}-linux"
 
 CONFIG_SITE="$PWD/depends/x86_64-pc-linux-gnu/share/config.site" \
-    ./configure --prefix="${prefix}"
+    ./configure --prefix="${prefix}" --disable-tests
 make clean && make -j4
 
 strip "src/uraniumxd"

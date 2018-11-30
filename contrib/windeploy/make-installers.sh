@@ -2,7 +2,7 @@
 
 set -e
 
-version="1.0.0"
+version="1.0.1"
 PATH="/opt/wine/usr/bin:$PATH"
 MAKENSIS="$HOME/.wine/drive_c/Program Files (x86)/NSIS/makensis.exe"
 

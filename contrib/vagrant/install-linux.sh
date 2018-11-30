@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version="1.0.0"
+version="1.0.1"
 pkgname="uraniumx-${version}-linux"
 mirror="https://github.com/uraniumx/uraniumx/releases/download/v${version}"
 

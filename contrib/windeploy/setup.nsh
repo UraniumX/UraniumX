@@ -5,7 +5,7 @@ SetCompressor /SOLID lzma
 
 # General Symbol Definitions
 !define REGKEY "SOFTWARE\UraniumX"
-!define VERSION 1.0.0
+!define VERSION 1.0.1
 !define COMPANY "UraniumX"
 !define URL https://uranium-x.com/
 
