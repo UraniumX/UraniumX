@@ -62,7 +62,8 @@ public:
 
     uint256 GetHash() const;
     uint256 GetHashArgon2d() const;
-    
+    uint256 GetHashYespower() const;
+
     int64_t GetBlockTime() const
     {
         return (int64_t)nTime;

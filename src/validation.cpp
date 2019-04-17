@@ -1021,8 +1021,10 @@ bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Consensus:
         return error("%s: Deserialize or I/O error - %s at %s", __func__, e.what(), pos.ToString());
     }
 
+    if (IsYesPower()) LogPrintf("YesPower block\n"); else LogPrintf("Argon2d block\n");
+
     // Check the header
-    if (!CheckProofOfWork(block.GetHashArgon2d(), block.nBits, consensusParams))
+    if (!CheckProofOfWork(IsYesPower() ? block.GetHashYespower() : block.GetHashArgon2d(), block.nBits, consensusParams))
         return error("ReadBlockFromDisk: Errors in block header at %s", pos.ToString());
 
     return true;
@@ -2821,7 +2823,7 @@ static bool FindUndoPos(CValidationState &state, int nFile, CDiskBlockPos &pos, 
 static bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, const Consensus::Params& consensusParams, bool fCheckPOW = true)
 {
     // Check proof of work matches claimed amount
-    if (fCheckPOW && !CheckProofOfWork(block.GetHashArgon2d(), block.nBits, consensusParams))
+    if (fCheckPOW && !CheckProofOfWork(IsYesPower() ? block.GetHashYespower() : block.GetHashArgon2d(), block.nBits, consensusParams))
         return state.DoS(50, false, REJECT_INVALID, "high-hash", false, "proof of work failed");
 
     return true;
@@ -4472,6 +4474,12 @@ double GuessVerificationProgress(const ChainTxData& data, CBlockIndex *pindex) {
     }
 
     return pindex->nChainTx / fTxTotal;
+}
+
+bool IsYesPower()
+{
+    // return (chainActive.Height > x);
+    return gArgs.GetBoolArg("-testnet", false);
 }
 
 class CMainCleanup

@@ -179,7 +179,7 @@ public:
         consensus.BIP34Hash   = uint256S("0xdae1dec7263541b45186f60c7eaf951bc05d62dc1fa25c7b3861baa0199a16e8");
         consensus.BIP65Height = 0;
         consensus.BIP66Height = 0;
-        consensus.powLimit    = uint256S("00007fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        consensus.powLimit    = uint256S("0x000fffff00000000000000000000000000000000000000000000000000000000");
         consensus.nPowTargetTimespan = 7 * 24 * 60 * 60;  // 7 days
         consensus.nPowTargetSpacing  = 5 * 60;            // 5 minutes
         consensus.fPowAllowMinDifficultyBlocks = true;
@@ -202,10 +202,10 @@ public:
         consensus.vDeployments[Consensus::DEPLOYMENT_SEGWIT].nTimeout = 1552953600; // March 19th, 2019
 
         // The best chain should have at least this much work.
-        consensus.nMinimumChainWork =  uint256S ("0x0000000000000000000000000000000000000000000000000000000000010001");
+        consensus.nMinimumChainWork =  uint256S ("0x0000000000000000000000000000000000000000000000000000000000000000");
 
         // By default assume that the signatures in ancestors of this block are valid.
-        consensus.defaultAssumeValid = uint256S ("0xdae1dec7263541b45186f60c7eaf951bc05d62dc1fa25c7b3861baa0199a16e8"); // 0
+        consensus.defaultAssumeValid = uint256S ("0x0000000000000000000000000000000000000000000000000000000000000000");
 
         pchMessageStart[0] = 0x0b;
         pchMessageStart[1] = 0x20;
@@ -214,12 +214,22 @@ public:
         nDefaultPort       = 18235;
         nPruneAfterHeight  = 1000;
 
-        genesis = CreateGenesisBlock(1524198787, 36386, 0x1e7fffff, 1, COIN);
+        uint32_t nTime = 1557009671;
+        uint32_t nNonce = 0;
+
+        if (nNonce == 0) {
+           while (UintToArith256(genesis.GetHashYespower()) > UintToArith256(consensus.powLimit)) {
+              nNonce++;
+              genesis = CreateGenesisBlock(nTime, nNonce, 0x1f0fffff, 1, COIN);
+              if (nNonce % 128 == 0) printf("\rnonce %08x", nNonce);
+           }
+           printf("\n%s\n", genesis.ToString().c_str());
+        }
+        genesis = CreateGenesisBlock(nTime, nNonce, 0x1f0fffff, 1, COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
 
-        assert (consensus.hashGenesisBlock == uint256S("0xdae1dec7263541b45186f60c7eaf951bc05d62dc1fa25c7b3861baa0199a16e8"));
-        assert (genesis.GetHashArgon2d() == uint256S("0x00005bf95d7ab5c6a466e1ff3478fcc229e49ed0ba6d3ec507a373d59aa1e4f1"));
-        assert (genesis.hashMerkleRoot == uint256S("0xa12b04a5138e9241d194dc72a5811e6c4468585d450e2548d71294444855d985"));
+//      assert (consensus.hashGenesisBlock == uint256S("0xdae1dec7263541b45186f60c7eaf951bc05d62dc1fa25c7b3861baa0199a16e8"));
+//      assert (genesis.hashMerkleRoot == uint256S("0xa12b04a5138e9241d194dc72a5811e6c4468585d450e2548d71294444855d985"));
 
         vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_test, pnSeed6_test + ARRAYLEN(pnSeed6_test));
         vSeeds.emplace_back ("node.uranium-x.com", false);
@@ -233,7 +243,7 @@ public:
         fDefaultConsistencyChecks = false;
         fRequireStandard = false;
         fMineBlocksOnDemand = false;
-        fMiningRequiresPeers = true;
+        fMiningRequiresPeers = false;
 
         checkpointData = (CCheckpointData) {
             {
@@ -297,9 +307,9 @@ public:
         genesis = CreateGenesisBlock(1524198906, 17, 0x200fffff, 1, COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
 
-        assert (consensus.hashGenesisBlock == uint256S("0x101336b273a9626bed8541eea8c716e5527ac5805681f41cf6e36d153ca7636f"));
-        assert (genesis.GetHashArgon2d() == uint256S("0x05716ab92b3b919209e1fe46b7a602e772df20df516aabc7f682e5e1d1d6be0f"));
-        assert (genesis.hashMerkleRoot == uint256S("0xa12b04a5138e9241d194dc72a5811e6c4468585d450e2548d71294444855d985"));
+        //assert (consensus.hashGenesisBlock == uint256S("0x101336b273a9626bed8541eea8c716e5527ac5805681f41cf6e36d153ca7636f"));
+        //assert (genesis.GetHashArgon2d() == uint256S("0x05716ab92b3b919209e1fe46b7a602e772df20df516aabc7f682e5e1d1d6be0f"));
+        //assert (genesis.hashMerkleRoot == uint256S("0xa12b04a5138e9241d194dc72a5811e6c4468585d450e2548d71294444855d985"));
 
         vFixedSeeds.clear(); //!< Regtest mode doesn't have any fixed seeds.
         vSeeds.clear();      //!< Regtest mode doesn't have any DNS seeds.

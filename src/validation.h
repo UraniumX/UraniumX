@@ -17,6 +17,7 @@
 #include "policy/feerate.h"
 #include "script/script_error.h"
 #include "sync.h"
+#include "util.h"
 #include "versionbits.h"
 
 #include <algorithm>
@@ -485,5 +486,7 @@ void DumpMempool();
 
 /** Load the mempool from disk. */
 bool LoadMempool();
+
+bool IsYesPower();
 
 #endif // BITCOIN_VALIDATION_H
