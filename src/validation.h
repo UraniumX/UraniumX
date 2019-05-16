@@ -17,6 +17,7 @@
 #include "policy/feerate.h"
 #include "script/script_error.h"
 #include "sync.h"
+#include "util.h"
 #include "versionbits.h"
 
 #include <algorithm>
@@ -184,6 +185,7 @@ extern CAmount maxTxFee;
 /** If the tip is older than this (in seconds), the node is considered to be in initial block download. */
 extern int64_t nMaxTipAge;
 extern bool fEnableReplacement;
+extern const int nYesPowerFork;
 
 /** Block hash whose ancestors we will assume to have valid scripts without checking them. */
 extern uint256 hashAssumeValid;
@@ -485,5 +487,7 @@ void DumpMempool();
 
 /** Load the mempool from disk. */
 bool LoadMempool();
+
+bool IsYesPower();
 
 #endif // BITCOIN_VALIDATION_H
