@@ -182,7 +182,7 @@ public:
         consensus.powLimit    = uint256S("0x000fffff00000000000000000000000000000000000000000000000000000000");
         consensus.nPowTargetTimespan = 7 * 24 * 60 * 60;  // 7 days
         consensus.nPowTargetSpacing  = 5 * 60;            // 5 minutes
-        consensus.fPowAllowMinDifficultyBlocks = true;
+        consensus.fPowAllowMinDifficultyBlocks = false;
         consensus.fPowNoRetargeting = false;
         consensus.nRuleChangeActivationThreshold = 3024;  // 75% of 2016 * 2
         consensus.nMinerConfirmationWindow = 2016 * 2;    // nPowTargetTimespan / nPowTargetSpacing
@@ -214,25 +214,14 @@ public:
         nDefaultPort       = 18235;
         nPruneAfterHeight  = 1000;
 
-        uint32_t nTime = 1557009671;
-        uint32_t nNonce = 0;
-
-        if (nNonce == 0) {
-           while (UintToArith256(genesis.GetHashYespower()) > UintToArith256(consensus.powLimit)) {
-              nNonce++;
-              genesis = CreateGenesisBlock(nTime, nNonce, 0x1f0fffff, 1, COIN);
-              if (nNonce % 128 == 0) printf("\rnonce %08x", nNonce);
-           }
-           printf("\n%s\n", genesis.ToString().c_str());
-        }
-        genesis = CreateGenesisBlock(nTime, nNonce, 0x1f0fffff, 1, COIN);
+        genesis = CreateGenesisBlock(1557009671, 2743, 0x1f0fffff, 1, COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
 
-//      assert (consensus.hashGenesisBlock == uint256S("0xdae1dec7263541b45186f60c7eaf951bc05d62dc1fa25c7b3861baa0199a16e8"));
-//      assert (genesis.hashMerkleRoot == uint256S("0xa12b04a5138e9241d194dc72a5811e6c4468585d450e2548d71294444855d985"));
+        assert (consensus.hashGenesisBlock == uint256S("0x6589ebb12bf31c219738eddb2f892f0ea4ae1ba7e24f55718fbcbdf30eba1b03"));
+        assert (genesis.GetHashYespower() == uint256S("0x000023e17dc44b9ce12b4e8b30076d241a70b0137183f2a011603965deea73ea"));
 
         vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_test, pnSeed6_test + ARRAYLEN(pnSeed6_test));
-        vSeeds.emplace_back ("node.uranium-x.com", false);
+        vSeeds.emplace_back ("155.138.148.16", false);
 
         base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,112);
         base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,227);
@@ -243,7 +232,7 @@ public:
         fDefaultConsistencyChecks = false;
         fRequireStandard = false;
         fMineBlocksOnDemand = false;
-        fMiningRequiresPeers = false;
+        fMiningRequiresPeers = true;
 
         checkpointData = (CCheckpointData) {
             {

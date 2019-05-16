@@ -78,6 +78,7 @@ size_t nCoinCacheUsage = 5000 * 300;
 uint64_t nPruneTarget = 0;
 int64_t nMaxTipAge = DEFAULT_MAX_TIP_AGE;
 bool fEnableReplacement = DEFAULT_ENABLE_REPLACEMENT;
+const int nYesPowerFork = 105000;
 
 uint256 hashAssumeValid;
 arith_uint256 nMinimumChainWork;
@@ -4478,8 +4479,7 @@ double GuessVerificationProgress(const ChainTxData& data, CBlockIndex *pindex) {
 
 bool IsYesPower()
 {
-    // return (chainActive.Height > x);
-    return gArgs.GetBoolArg("-testnet", false);
+    return (chainActive.Height() >= nYesPowerFork || gArgs.GetBoolArg("-testnet", false));
 }
 
 class CMainCleanup
