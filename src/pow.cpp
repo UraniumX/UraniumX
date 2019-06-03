@@ -88,8 +88,8 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
 
     // as argon2d/yespower are entirely different algorithms, we place
     //        a period of 10 blocks between them which is minimum difficulty
-    if ((pindexLast->nHeight >= nYesPowerFork-5) &&
-        (pindexLast->nHeight <= nYesPowerFork+5))
+    if ((pindexLast->nHeight+1 >= nYesPowerFork-5) &&
+        (pindexLast->nHeight+1 <= nYesPowerFork+5))
         return UintToArith256(params.powLimit).GetCompact();
 
     return DarkGravityWave (pindexLast, params);

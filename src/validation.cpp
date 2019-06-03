@@ -78,7 +78,7 @@ size_t nCoinCacheUsage = 5000 * 300;
 uint64_t nPruneTarget = 0;
 int64_t nMaxTipAge = DEFAULT_MAX_TIP_AGE;
 bool fEnableReplacement = DEFAULT_ENABLE_REPLACEMENT;
-const int nYesPowerFork = 105000;
+const int nYesPowerFork = 106500;
 
 uint256 hashAssumeValid;
 arith_uint256 nMinimumChainWork;
