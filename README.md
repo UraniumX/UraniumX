@@ -13,7 +13,7 @@ Blockchain
 ----------
 - **Type** Proof-of-Work (PoW) mining
 - **Max Supply**: 235,000 URX
-- **Current Block Reward**: 0.25 URX, halfing every few years
+- **Current Block Reward**: 0.25 URX, halving every few years
 - **Block Time**: ~5 Minutes
 - **Emission length**: ~70 years
 - **First block** 1-APR-2018
