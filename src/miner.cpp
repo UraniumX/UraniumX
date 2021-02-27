@@ -567,7 +567,7 @@ bool static ScanHash (MinerInfo* miner, const CBlockHeader *pblock, uint32_t& nN
     {   
         nNonce++;
         block.nNonce = nNonce;
-        *phash = block.GetHashArgon2d();
+        *phash = block.GetHashYespower();
         miner->nHashes += 1;
 
         if (((uint16_t*)phash)[15] <= 32)
@@ -703,8 +703,7 @@ void static URXMiner(MinerInfo* miner, const CChainParams& chainparams)
                         pblock->nNonce = nNonce;
                         LogPrintf("UraniumX Miner: proof-of-work found  \n  hash: %s  \ntarget: %s\n",
                                   hash.GetHex(), hashTarget.GetHex());
-                        assert(hash == pblock->GetHashArgon2d());
-
+                        assert(hash == pblock->GetHashYespower());
                         SetThreadPriority (THREAD_PRIORITY_NORMAL);
                         fBlockFound = ProcessBlockFound(pblock, chainparams);
                         SetThreadPriority (THREAD_PRIORITY_LOWEST);

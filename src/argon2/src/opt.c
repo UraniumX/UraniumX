@@ -23,7 +23,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "argon2.h"
+#include <argon2/include/argon2.h>
 #include "core.h"
 
 #include "blake2/blake2.h"

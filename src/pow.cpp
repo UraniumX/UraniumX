@@ -11,6 +11,7 @@
 #include "primitives/block.h"
 #include "uint256.h"
 #include "util.h"
+#include "validation.h"
 
 unsigned int static DarkGravityWave(const CBlockIndex* pindexLast, const Consensus::Params& params) {
     /* current difficulty formula, dash - DarkGravity v3, written by Evan Duffield - evan@dashpay.io */
@@ -85,8 +86,10 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
 {
     assert(pindexLast != nullptr);
 
-    const int nDeltaTime = pblock->GetBlockTime() - pindexLast->GetBlockTime();
-    if (params.fPowAllowMinDifficultyBlocks && nDeltaTime > 2 * 60)
+    // as argon2d/yespower are entirely different algorithms, we place
+    //        a period of 10 blocks between them which is minimum difficulty
+    if ((pindexLast->nHeight+1 >= nYesPowerFork-5) &&
+        (pindexLast->nHeight+1 <= nYesPowerFork+5))
         return UintToArith256(params.powLimit).GetCompact();
 
     return DarkGravityWave (pindexLast, params);

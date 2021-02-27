@@ -4,9 +4,9 @@
 
 DIST_SUBDIRS = secp256k1 univalue
 
-AM_LDFLAGS = $(PTHREAD_CFLAGS) $(LIBTOOL_LDFLAGS) $(HARDENED_LDFLAGS)
-AM_CXXFLAGS = $(HARDENED_CXXFLAGS) $(ERROR_CXXFLAGS)
-AM_CPPFLAGS = $(HARDENED_CPPFLAGS)
+AM_LDFLAGS = $(PTHREAD_CFLAGS) $(LIBTOOL_LDFLAGS)
+AM_CXXFLAGS = $(ERROR_CXXFLAGS)
+AM_CPPFLAGS = 
 EXTRA_LIBRARIES =
 
 if EMBEDDED_UNIVALUE
@@ -313,7 +313,11 @@ libbitcoin_consensus_a_SOURCES = \
   argon2/src/encoding.c \
   argon2/src/opt.c \
   argon2.h \
-  crypto/argon2.cpp
+  crypto/argon2.cpp \
+  yespower/yespower.h \
+  yespower/yespower-opt.c \
+  yespower/sha256.h \
+  yespower/sha256.c
 
 # common: shared between uraniumxd, and bitcoin-qt and non-server tools
 libbitcoin_common_a_CPPFLAGS = $(AM_CPPFLAGS) $(BITCOIN_INCLUDES)
